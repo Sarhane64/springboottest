@@ -16,4 +16,6 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
 
     @Query(value = "SELECT * FROM article WHERE created_at >=:date ORDER BY created_at DESC", nativeQuery = true)
     List<Article> findByCreatedAtAfter(LocalDate date);
+
+    List<Article> findByTitleContaining(String title);
 }
