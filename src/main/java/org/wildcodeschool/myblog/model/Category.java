@@ -1,9 +1,8 @@
 package org.wildcodeschool.myblog.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+
+import java.util.List;
 
 @Entity
 public class Category {
@@ -13,21 +12,33 @@ public class Category {
     private Long id;
     private String name;
 
+    @OneToMany(mappedBy = "category")
+    private List<Article> articles;
+
+
     // Getters et setters
+
+    public String getName() {
+        return name;
+    }
 
     public Long getId() {
         return id;
+    }
+
+    public List<Article> getArticles() {
+        return articles;
     }
 
     public void setId(Long id) {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
-    }
-
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setArticles(List<Article> articles) {
+        this.articles = articles;
     }
 }
