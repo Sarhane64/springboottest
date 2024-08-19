@@ -7,12 +7,16 @@ import org.springframework.web.bind.annotation.*;
 import org.wildcodeschool.myblog.dto.ArticleDTO;
 import org.wildcodeschool.myblog.model.Article;
 import org.wildcodeschool.myblog.model.Category;
+import org.wildcodeschool.myblog.model.Image;
 import org.wildcodeschool.myblog.repository.ArticleRepository;
 import org.wildcodeschool.myblog.repository.CategoryRepository;
+import org.wildcodeschool.myblog.repository.ImageRepository;
+
 
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -27,6 +31,8 @@ public class ArticleController {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private ImageRepository imageRepository;
 
     @GetMapping
     public ResponseEntity<List<ArticleDTO>> getAllArticles() {
@@ -78,8 +84,7 @@ public class ArticleController {
 
 
     @PostMapping
-    public ResponseEntity<ArticleDTO> createArticle(@RequestBody ArticleDTO articleDto) {
-        Article article = convertToEntity(articleDto);
+    public ResponseEntity<ArticleDTO> createArticle(@RequestBody Article article) {
         article.setCreatedAt(LocalDateTime.now());
         article.setUpdatedAt(LocalDateTime.now());
 
@@ -87,14 +92,31 @@ public class ArticleController {
         if (article.getCategory() != null) {
             Category category = categoryRepository.findById(article.getCategory().getId()).orElse(null);
             if (category == null) {
-                return ResponseEntity.badRequest().body(null); // Retourne une réponse 400 Bad Request si la catégorie n'est pas trouvée
+                return ResponseEntity.badRequest().body(null); 
             }
             article.setCategory(category);
         }
-
+        if (article.getImages() != null && !article.getImages().isEmpty()) {
+            List<Image> validImages = new ArrayList<>();
+            for (Image image : article.getImages()) {
+                if (image.getId() != null) {
+                    Image existingImage = imageRepository.findById(image.getId()).orElse(null);
+                    if (existingImage != null) {
+                        validImages.add(existingImage);
+                    } else {
+                        return ResponseEntity.badRequest().body(null);
+                    }
+                } else {
+                    Image savedImage = imageRepository.save(image);
+                    validImages.add(savedImage);
+                }
+            }
+            article.setImages(validImages);
+        }
         Article savedArticle = articleRepository.save(article);
         return ResponseEntity.status(HttpStatus.CREATED).body(convertToDTO(savedArticle));
     }
+
 
     @PutMapping("/{id}")
     public ResponseEntity<ArticleDTO> updateArticle(@PathVariable Long id, @RequestBody ArticleDTO articleDTO) {
@@ -116,7 +138,25 @@ public class ArticleController {
             Category category = optionalCategory.get();
             article.setCategory(category);
         }
-
+        if (article.getImages() != null) {
+            List<Image> validImages = new ArrayList<>();
+            for (Image image : article.getImages()) {
+                if (image.getId() != null) {
+                    Image existingImage = imageRepository.findById(image.getId()).orElse(null);
+                    if (existingImage != null) {
+                        validImages.add(existingImage);
+                    } else {
+                        return ResponseEntity.badRequest().build();
+                    }
+                } else {
+                    Image savedImage = imageRepository.save(image);
+                    validImages.add(savedImage);
+                }
+            }
+            article.setImages(validImages);
+        } else {
+            article.getImages().clear();
+        }
         Article updatedArticle = articleRepository.save(article);
         return ResponseEntity.ok(convertToDTO(updatedArticle));
     }
@@ -133,17 +173,26 @@ public class ArticleController {
 
     private ArticleDTO convertToDTO(Article article) {
         ArticleDTO articleDto = new ArticleDTO();
-        articleDto.setId(article.getId()); // Utiliser articleDto au lieu de ArticleDto
+        articleDto.setId(article.getId());
         articleDto.setTitle(article.getTitle());
         articleDto.setContent(article.getContent());
         articleDto.setCreatedAt(article.getCreatedAt());
         articleDto.setUpdatedAt(article.getUpdatedAt());
+
         if (article.getCategory() != null) {
             articleDto.setCategoryId(article.getCategory().getId());
             articleDto.setCategoryName(article.getCategory().getName());
         }
+
+        if (article.getImages() != null) {
+            articleDto.setImageUrls(article.getImages().stream()
+                    .map(Image::getUrl)
+                    .collect(Collectors.toList()));
+        }
+
         return articleDto;
     }
+
     private Article convertToEntity(ArticleDTO articleDTO) {
         Article article = new Article();
         article.setId(articleDTO.getId());

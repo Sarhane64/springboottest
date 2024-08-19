@@ -4,7 +4,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.*;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,7 +24,13 @@ public class Article {
     @JoinColumn(name = "category_id")
     private Category category;
 
-
+    @ManyToMany
+    @JoinTable(
+            name = "article_image",
+            joinColumns = @JoinColumn(name = "article_id"),
+            inverseJoinColumns = @JoinColumn(name = "image_id")
+    )
+    private List<Image> images;
     // Getters et setters
 
     public Long getId() {
@@ -74,5 +79,11 @@ public class Article {
 
     public void setCategory(Category category) {
         this.category = category;
+    }
+    public void setImages(List<Image> images) {
+        this.images = images;
+    }
+    public List<Image> getImages() {
+        return images;
     }
 }
